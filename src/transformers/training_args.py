@@ -1553,12 +1553,13 @@ class TrainingArguments:
             and (self.device.type != "mlu")
             and (self.device.type != "npu")
             and (self.device.type != "xpu")
+            and (self.device.type != "mps")
             and (get_xla_device_type(self.device) not in ["GPU", "CUDA"])
             and (self.fp16 or self.fp16_full_eval)
         ):
             raise ValueError(
                 "FP16 Mixed precision training with AMP or APEX (`--fp16`) and FP16 half precision evaluation"
-                " (`--fp16_full_eval`) can only be used on CUDA or MLU devices or NPU devices or certain XPU devices (with IPEX)."
+                " (`--fp16_full_eval`) can only be used on CUDA or MLU devices or NPU devices or certain XPU devices (with IPEX) or MPS devices."
             )
 
         if (
@@ -1573,11 +1574,16 @@ class TrainingArguments:
             and (self.device.type != "cpu")
             and (self.bf16 or self.bf16_full_eval)
         ):
-            raise ValueError(
-                "BF16 Mixed precision training with AMP (`--bf16`) and BF16 half precision evaluation"
-                " (`--bf16_full_eval`) can only be used on CUDA, XPU (with IPEX), NPU, MLU or CPU/TPU/NeuronCore devices."
-            )
-
+            if (self.device.type != "mps"):
+                raise ValueError(
+                    "BF16 Mixed precision training with AMP (`--bf16`) and BF16 half precision evaluation"
+                    " (`--bf16_full_eval`) can only be used on CUDA, XPU (with IPEX), NPU, MLU or CPU/TPU/NeuronCore devices or MPS devices."
+                )
+            else:
+                warnings.warn(
+                    "bfloat16 is not supported by Mac M1 processors."
+                    "Be sure that you run on more modern processor."
+                )
         if self.torchdynamo is not None:
             warnings.warn(
                 "`torchdynamo` is deprecated and will be removed in version 5 of 🤗 Transformers. Use"
